@@ -1,5 +1,5 @@
 import { useSignIn } from "@clerk/expo";
-import { Link, useRouter, type Href } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { styled } from "nativewind";
 import { useState } from "react";
 import {
@@ -28,7 +28,7 @@ const SignIn = () => {
 
   const emailValid =
     emailAddress.length === 0 || /^[^\s@]+@[^\s@]+\.[^\s@]+/.test(emailAddress);
-  const passwordValid = password.length === 0 || password.length >= 0;
+  const passwordValid = password.length > 0;
   const formValid =
     emailAddress.length > 0 && password.length > 0 && emailValid;
 
@@ -54,17 +54,18 @@ const SignIn = () => {
           }
 
           const url = decorateUrl("/(tabs)");
-          if (url.startsWith("http")) {
-            // Only use window.location on web platform
-            if (typeof window !== "undefined" && window.location) {
-              window.location.href = url;
-            } else {
-              // On native, just use router navigation
-              router.replace("/(tabs)" as Href);
-            }
-          } else {
-            router.replace(url as Href);
+          // On web, do a full navigation so Clerk's session cookie/state
+          // is picked up correctly.
+          if (
+            typeof window !== "undefined" &&
+            window.location &&
+            url.startsWith("http")
+          ) {
+            window.location.href = url;
           }
+          // On native, no manual navigation needed — root layout's
+          // Stack.Protected reacts to isSignedIn automatically once the
+          // session is active.
         },
       });
     } else if (signIn.status === "needs_second_factor") {
@@ -96,17 +97,14 @@ const SignIn = () => {
           }
 
           const url = decorateUrl("/(tabs)");
-          if (url.startsWith("http")) {
-            // Only use window.location on web platform
-            if (typeof window !== "undefined" && window.location) {
-              window.location.href = url;
-            } else {
-              // On native, just use router navigation
-              router.replace("/(tabs)" as Href);
-            }
-          } else {
-            router.replace(url as Href);
+          if (
+            typeof window !== "undefined" &&
+            window.location &&
+            url.startsWith("http")
+          ) {
+            window.location.href = url;
           }
+          // Native: handled by Stack.Protected in root layout.
         },
       });
     } else {
